@@ -24,7 +24,7 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>jongo</artifactId>
+    <artifactId>softmotions-jongo</artifactId>
     <version>0.5-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Jongo</name>
