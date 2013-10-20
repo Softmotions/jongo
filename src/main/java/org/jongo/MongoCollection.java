@@ -72,6 +72,14 @@ public class MongoCollection {
         return new FindOne(collection, readPreference, mapper.getUnmarshaller(), mapper.getQueryFactory(), query, parameters);
     }
 
+    public FindOne findOne(Query query) {
+        return new FindOne(collection, readPreference, mapper.getUnmarshaller(), mapper.getQueryFactory(), query);
+    }
+
+    public FindOne findOne(DBObject query) {
+        return new FindOne(collection, readPreference, mapper.getUnmarshaller(), mapper.getQueryFactory(), createQuery(query));
+    }
+
     public Find find() {
         return find(ALL);
     }
@@ -84,6 +92,15 @@ public class MongoCollection {
         return new Find(collection, readPreference, mapper.getUnmarshaller(), mapper.getQueryFactory(), query, parameters);
     }
 
+    public Find find(Query query) {
+        return new Find(collection, readPreference, mapper.getUnmarshaller(), mapper.getQueryFactory(), query);
+    }
+
+    public Find find(DBObject query) {
+        return new Find(collection, readPreference, mapper.getUnmarshaller(), mapper.getQueryFactory(), createQuery(query));
+    }
+
+
     public FindAndModify findAndModify() {
         return findAndModify(ALL);
     }
@@ -94,6 +111,14 @@ public class MongoCollection {
 
     public FindAndModify findAndModify(String query, Object... parameters) {
         return new FindAndModify(collection, mapper.getUnmarshaller(), mapper.getQueryFactory(), query, parameters);
+    }
+
+    public FindAndModify findAndModify(Query query) {
+        return new FindAndModify(collection, mapper.getUnmarshaller(), mapper.getQueryFactory(), query);
+    }
+
+    public FindAndModify findAndModify(DBObject query) {
+        return new FindAndModify(collection, mapper.getUnmarshaller(), mapper.getQueryFactory(), createQuery(query));
     }
 
     public long count() {
@@ -204,11 +229,27 @@ public class MongoCollection {
         return mapper.getQueryFactory().createQuery(query, parameters);
     }
 
+    private Query createQuery(DBObject qobj) {
+        return new BsonQuery(qobj);
+    }
+
     @Override
     public String toString() {
         if (collection != null)
             return "collection {" + "name: '" + collection.getName() + "', db: '" + collection.getDB().getName() + "'}";
         else
             return super.toString();
+    }
+
+    private static class BsonQuery implements Query {
+        private final DBObject dbo;
+
+        public BsonQuery(DBObject dbo) {
+            this.dbo = dbo;
+        }
+
+        public DBObject toDBObject() {
+            return dbo;
+        }
     }
 }

@@ -19,12 +19,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
+        <groupId>softmotions</groupId>
+        <artifactId>softmotions-base-pom</artifactId>
+        <version>1.0.0</version>
     </parent>
 
-    <groupId>org.jongo</groupId>
     <artifactId>jongo</artifactId>
     <version>0.5-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -41,16 +40,6 @@
         </license>
     </licenses>
 
-    <issueManagement>
-        <system>github</system>
-        <url>https://github.com/bguerout/jongo/issues</url>
-    </issueManagement>
-
-    <ciManagement>
-        <system>Jenkins</system>
-        <url>https://jongo.ci.cloudbees.com/</url>
-    </ciManagement>
-
     <developers>
         <developer>
             <id>bguerout</id>
@@ -64,17 +53,8 @@
         </developer>
     </developers>
 
-    <scm>
-        <connection>scm:git:git@github.com:bguerout/jongo.git</connection>
-        <developerConnection>scm:git:git@github.com:bguerout/jongo.git</developerConnection>
-        <url>git@github.com:bguerout/jongo</url>
-    </scm>
-
-    <prerequisites>
-        <maven>2.2.1</maven>
-    </prerequisites>
-
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mongo.version>[2.9.0,2.99)</mongo.version>
         <jackson.version>2.2.3</jackson.version>
         <bson4jackson.version>2.2.0</bson4jackson.version>

@@ -36,12 +36,17 @@ public class Find {
     private Query fields, sort, hint;
     private Integer limit, skip;
 
-    Find(DBCollection collection, ReadPreference readPreference, Unmarshaller unmarshaller, QueryFactory queryFactory, String query, Object... parameters) {
+
+    Find(DBCollection collection, ReadPreference readPreference, Unmarshaller unmarshaller, QueryFactory queryFactory, Query query) {
         this.readPreference = readPreference;
         this.unmarshaller = unmarshaller;
         this.collection = collection;
         this.queryFactory = queryFactory;
-        this.query = this.queryFactory.createQuery(query, parameters);
+        this.query = query;
+    }
+
+    Find(DBCollection collection, ReadPreference readPreference, Unmarshaller unmarshaller, QueryFactory queryFactory, String query, Object... parameters) {
+        this(collection, readPreference, unmarshaller, queryFactory, queryFactory.createQuery(query, parameters));
     }
 
     public <T> Iterable<T> as(final Class<T> clazz) {

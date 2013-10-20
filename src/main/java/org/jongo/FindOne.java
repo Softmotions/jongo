@@ -34,12 +34,19 @@ public class FindOne {
     private Query fields;
     private final QueryFactory queryFactory;
 
-    FindOne(DBCollection collection, ReadPreference readPreference, Unmarshaller unmarshaller, QueryFactory queryFactory, String query, Object... parameters) {
+    FindOne(DBCollection collection, ReadPreference readPreference, Unmarshaller unmarshaller,
+            QueryFactory queryFactory, Query query) {
         this.unmarshaller = unmarshaller;
         this.collection = collection;
         this.readPreference = readPreference;
         this.queryFactory = queryFactory;
-        this.query = this.queryFactory.createQuery(query, parameters);
+        this.query = query;
+
+    }
+
+    FindOne(DBCollection collection, ReadPreference readPreference, Unmarshaller unmarshaller,
+            QueryFactory queryFactory, String query, Object... params) {
+         this(collection, readPreference, unmarshaller, queryFactory, queryFactory.createQuery(query, params));
     }
 
     public <T> T as(final Class<T> clazz) {

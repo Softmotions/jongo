@@ -35,11 +35,16 @@ public class FindAndModify {
     private boolean returnNew = false;
     private boolean upsert = false;
 
-    FindAndModify(DBCollection collection, Unmarshaller unmarshaller, QueryFactory queryFactory, String query, Object... parameters) {
+
+    FindAndModify(DBCollection collection, Unmarshaller unmarshaller, QueryFactory queryFactory, Query query) {
         this.unmarshaller = unmarshaller;
         this.collection = collection;
         this.queryFactory = queryFactory;
-        this.query = this.queryFactory.createQuery(query, parameters);
+        this.query = query;
+    }
+
+    FindAndModify(DBCollection collection, Unmarshaller unmarshaller, QueryFactory queryFactory, String query, Object... parameters) {
+        this(collection, unmarshaller, queryFactory, queryFactory.createQuery(query, parameters));
     }
 
     public FindAndModify with(String modifier, Object... parameters) {
