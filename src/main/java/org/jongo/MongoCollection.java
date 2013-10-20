@@ -16,8 +16,14 @@
 
 package org.jongo;
 
-import com.mongodb.*;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.ReadPreference;
+import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
+
 import org.bson.types.ObjectId;
+import org.jongo.constraints.Constraints;
 import org.jongo.query.Query;
 
 
@@ -80,6 +86,12 @@ public class MongoCollection {
         return new FindOne(collection, readPreference, mapper.getUnmarshaller(), mapper.getQueryFactory(), createQuery(query));
     }
 
+    public FindOne findOne(Constraints c) {
+        FindOne f = findOne(c.createDBQuery());
+        f.projection(toBSONQuery(c.createDBFields()));
+        return f;
+    }
+
     public Find find() {
         return find(ALL);
     }
@@ -100,6 +112,18 @@ public class MongoCollection {
         return new Find(collection, readPreference, mapper.getUnmarshaller(), mapper.getQueryFactory(), createQuery(query));
     }
 
+    public Find find(Constraints c) {
+        Find f = find(c.createDBQuery());
+        f.projection(toBSONQuery(c.createDBFields()));
+        f.sort(toBSONQuery(c.createDBOrderBy()));
+        if (c.getSkip() >= 0) {
+            f.skip(c.getSkip());
+        }
+        if (c.getLimit() >= 0) {
+            f.limit(c.getLimit());
+        }
+        return f;
+    }
 
     public FindAndModify findAndModify() {
         return findAndModify(ALL);
@@ -119,6 +143,13 @@ public class MongoCollection {
 
     public FindAndModify findAndModify(DBObject query) {
         return new FindAndModify(collection, mapper.getUnmarshaller(), mapper.getQueryFactory(), createQuery(query));
+    }
+
+    public FindAndModify findAndModify(Constraints c) {
+        FindAndModify f = findAndModify(c.createDBQuery());
+        f.projection(toBSONQuery(c.createDBFields()));
+        f.sort(toBSONQuery(c.createDBOrderBy()));
+        return f;
     }
 
     public long count() {
@@ -230,7 +261,7 @@ public class MongoCollection {
     }
 
     private Query createQuery(DBObject qobj) {
-        return new BsonQuery(qobj);
+        return toBSONQuery(qobj);
     }
 
     @Override
@@ -239,6 +270,10 @@ public class MongoCollection {
             return "collection {" + "name: '" + collection.getName() + "', db: '" + collection.getDB().getName() + "'}";
         else
             return super.toString();
+    }
+
+    private BsonQuery toBSONQuery(DBObject dbo) {
+        return (dbo != null) ? new BsonQuery(dbo) : null;
     }
 
     private static class BsonQuery implements Query {

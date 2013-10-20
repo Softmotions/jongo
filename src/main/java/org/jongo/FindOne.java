@@ -68,6 +68,11 @@ public class FindOne {
         return this;
     }
 
+    public FindOne projection(Query query) {
+        this.fields = query;
+        return this;
+    }
+
     private DBObject getFieldsAsDBObject() {
         return fields == null ? null : fields.toDBObject();
     }

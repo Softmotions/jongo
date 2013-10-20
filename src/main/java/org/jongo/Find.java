@@ -82,6 +82,11 @@ public class Find {
         return this;
     }
 
+    public Find projection(Query query) {
+        this.fields = query;
+        return this;
+    }
+
     public Find limit(int limit) {
         this.limit = limit;
         return this;
@@ -94,6 +99,11 @@ public class Find {
 
     public Find sort(String sort) {
         this.sort = queryFactory.createQuery(sort);
+        return this;
+    }
+
+    public Find sort(Query sort) {
+        this.sort = sort;
         return this;
     }
 
