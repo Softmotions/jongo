@@ -88,7 +88,7 @@ public class FindPartialFieldTest extends JongoTestCase {
         collection.save(friend);
 
         /* when */
-        Friend result = collection.findOne("{name:'John'}").projection(null).as(Friend.class);
+        Friend result = collection.findOne("{name:'John'}").as(Friend.class);
 
         assertThat(friend.getName()).isEqualTo("John");
         assertThat(friend.getAddress()).isEqualTo("22 Wall Street Avenue");
