@@ -72,4 +72,11 @@ public class Sort implements Serializable {
             this.name = name;
         }
     }
+
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Sort{");
+        sb.append("fields=").append(fields);
+        sb.append('}');
+        return sb.toString();
+    }
 }

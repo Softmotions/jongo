@@ -339,4 +339,15 @@ public class Constraints implements Serializable {
     public int getSkip() {
         return skip;
     }
+
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Constraints{");
+        sb.append("query=").append(query);
+        sb.append(", fields=").append(fields);
+        sb.append(", skip=").append(skip);
+        sb.append(", limit=").append(limit);
+        sb.append(", sort=").append(sort);
+        sb.append('}');
+        return sb.toString();
+    }
 }
