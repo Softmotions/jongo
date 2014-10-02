@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FindSkipSortLimitTest extends JongoTestCase {
 
@@ -80,7 +80,7 @@ public class FindSkipSortLimitTest extends JongoTestCase {
         collection.save(new Friend("John", "22 Wall Street Av."));
 
         /* when */
-        Iterator<Friend> results = collection.find("{}").sort("{'address':1}").as(Friend.class).iterator();
+        Iterator<Friend> results = collection.find("{}").sort("{'address':1}").as(Friend.class);
 
         /* then */
         assertThat(results.next().getAddress()).isEqualTo("21 Wall Street Av.");

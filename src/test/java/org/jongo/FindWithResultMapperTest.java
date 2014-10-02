@@ -23,7 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FindWithResultMapperTest extends JongoTestCase {
 
@@ -40,7 +40,7 @@ public class FindWithResultMapperTest extends JongoTestCase {
     }
 
     @Test
-    public void canFind() throws Exception {
+    public void canFindAndMap() throws Exception {
         /* given */
         ResultHandler<DBObject> handler = new RawResultHandler<DBObject>();
         collection.save(new Friend("John", "22 Wall Street Avenue"));
@@ -54,7 +54,7 @@ public class FindWithResultMapperTest extends JongoTestCase {
     }
 
     @Test
-    public void canFindOne() throws Exception {
+    public void canFindOneAndMap() throws Exception {
         /* given */
         ResultHandler<DBObject> handler = new RawResultHandler<DBObject>();
         Friend john = new Friend("John", "22 Wall Street Avenue");

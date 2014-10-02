@@ -23,7 +23,7 @@ import org.jongo.marshall.Unmarshaller;
 import org.jongo.query.Query;
 import org.jongo.query.QueryFactory;
 
-import static org.jongo.ResultHandlerFactory.newMapper;
+import static org.jongo.ResultHandlerFactory.newResultHandler;
 
 public class FindOne {
 
@@ -31,7 +31,7 @@ public class FindOne {
     private final DBCollection collection;
     private final ReadPreference readPreference;
     private final Query query;
-    private Query fields;
+    private Query fields, orderBy;
     private final QueryFactory queryFactory;
 
     FindOne(DBCollection collection, ReadPreference readPreference, Unmarshaller unmarshaller,
@@ -50,11 +50,11 @@ public class FindOne {
     }
 
     public <T> T as(final Class<T> clazz) {
-        return map(newMapper(clazz, unmarshaller));
+        return map(newResultHandler(clazz, unmarshaller));
     }
 
     public <T> T map(ResultHandler<T> resultHandler) {
-        DBObject result = collection.findOne(query.toDBObject(), getFieldsAsDBObject(), readPreference);
+        DBObject result = collection.findOne(query.toDBObject(), getFieldsAsDBObject(), getOrderByAsDBObject(), readPreference);
         return result == null ? null : resultHandler.map(result);
     }
 
@@ -73,7 +73,16 @@ public class FindOne {
         return this;
     }
 
+    public FindOne orderBy(String orderBy) {
+        this.orderBy = queryFactory.createQuery(orderBy);
+        return this;
+    }
+
     private DBObject getFieldsAsDBObject() {
         return fields == null ? null : fields.toDBObject();
+    }
+
+    private DBObject getOrderByAsDBObject() {
+        return orderBy == null ? null : orderBy.toDBObject();
     }
 }

@@ -31,7 +31,7 @@ import org.junit.Test;
 import java.util.Iterator;
 
 import static junit.framework.Assert.fail;
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.jongo.Oid.withOid;
 
 public class FindTest extends JongoTestCase {
@@ -55,7 +55,7 @@ public class FindTest extends JongoTestCase {
         collection.save(friend);
 
         /* when */
-        Iterator<Friend> friends = collection.find("{name:'John'}").as(Friend.class).iterator();
+        Iterator<Friend> friends = collection.find("{name:'John'}").as(Friend.class);
 
         /* then */
         assertThat(friends.hasNext()).isTrue();
@@ -64,12 +64,24 @@ public class FindTest extends JongoTestCase {
     }
 
     @Test
+    public void canFindAndCount() throws Exception {
+
+        Friend friend = new Friend(new ObjectId(), "John");
+        collection.save(friend);
+        MongoCursor<Friend> friends = collection.find("{name:'John'}").as(Friend.class);
+
+        int nbResults = friends.count();
+
+        assertThat(nbResults).isEqualTo(1);
+    }
+
+    @Test
     public void shouldFailWhenUnableToUnmarshallResult() throws Exception {
         /* given */
         collection.insert("{error: 'NotaDate'}");
 
         /* when */
-        Iterator<ErrorObject> results = collection.find().as(ErrorObject.class).iterator();
+        Iterator<ErrorObject> results = collection.find().as(ErrorObject.class);
 
         try {
             results.next();
@@ -87,10 +99,10 @@ public class FindTest extends JongoTestCase {
         collection.insert("{name:'Peter'}");
 
         /* when */
-        Iterable<Friend> friends = collection.find().as(Friend.class);
+        MongoCursor<Friend> friends = collection.find().as(Friend.class);
 
         /* then */
-        assertThat(friends.iterator().hasNext()).isTrue();
+        assertThat(friends.hasNext()).isTrue();
         for (Friend friend : friends) {
             assertThat(friend.getName()).isIn("John", "Smith", "Peter");
         }
@@ -116,7 +128,7 @@ public class FindTest extends JongoTestCase {
         Friend john = new Friend(id, "John");
         collection.save(john);
 
-        Iterator<Friend> friends = collection.find("{_id:{$oid:#}}", id.toString()).as(Friend.class).iterator();
+        Iterator<Friend> friends = collection.find("{_id:{$oid:#}}", id.toString()).as(Friend.class);
 
         /* then */
         assertThat(friends.hasNext()).isTrue();
@@ -136,7 +148,7 @@ public class FindTest extends JongoTestCase {
         collection.save(friend);
 
         /* when */
-        Iterator<ExposableFriend> friends = collection.find(withOid(friend.getId())).as(ExposableFriend.class).iterator();
+        Iterator<ExposableFriend> friends = collection.find(withOid(friend.getId())).as(ExposableFriend.class);
 
         /* then */
         ExposableFriend john = friends.next();
@@ -152,7 +164,7 @@ public class FindTest extends JongoTestCase {
         collection.save(friend);
 
         /* when */
-        Iterator<Friend> friends = collection.withReadPreference(ReadPreference.primaryPreferred()).find("{name:'John'}").as(Friend.class).iterator();
+        MongoCursor<Friend> friends = collection.withReadPreference(ReadPreference.primaryPreferred()).find("{name:'John'}").as(Friend.class);
 
         /* then */
         assertThat(friends.hasNext()).isTrue();

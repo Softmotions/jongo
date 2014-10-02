@@ -19,14 +19,13 @@ package org.jongo;
 import com.mongodb.*;
 import org.bson.LazyBSONCallback;
 import org.bson.types.ObjectId;
+import org.jongo.bson.Bson;
 import org.jongo.bson.BsonDocument;
 import org.jongo.marshall.Marshaller;
 import org.jongo.query.QueryFactory;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 class Insert {
 
@@ -62,7 +61,11 @@ class Insert {
 
     public WriteResult insert(String query, Object... parameters) {
         DBObject dbQuery = queryFactory.createQuery(query, parameters).toDBObject();
-        return collection.insert(dbQuery, writeConcern);
+        if (dbQuery instanceof BasicDBList) {
+            return insert(((BasicDBList) dbQuery).toArray());
+        } else {
+            return collection.insert(dbQuery, writeConcern);
+        }
     }
 
     private Object preparePojo(Object pojo) {
@@ -75,46 +78,40 @@ class Insert {
     }
 
     private DBObject convertToDBObject(Object pojo, Object id) {
-        BsonDocument document = marshallDocument(pojo);
-        DBObject dbo = new AlreadyCheckedDBObject(document.toByteArray(), id);
-        dbo.put("_id", id);
-        return dbo;
+        BsonDocument document = asBsonDocument(marshaller, pojo);
+        return new LazyIdDBObject(document.toByteArray(), marshaller, id);
     }
 
-    private BsonDocument marshallDocument(Object pojo) {
-        try {
-            return marshaller.marshall(pojo);
-        } catch (Exception e) {
-            String message = String.format("Unable to save object %s due to a marshalling error", pojo);
-            throw new IllegalArgumentException(message, e);
-        }
-    }
+    private final static class LazyIdDBObject extends LazyWriteableDBObject {
 
-    private final static class AlreadyCheckedDBObject extends LazyWriteableDBObject {
-
-        private final Set<String> keys;
         private final Object id;
+        private final Marshaller marshaller;
 
-        private AlreadyCheckedDBObject(byte[] data, Object id) {
+        private LazyIdDBObject(byte[] data, Marshaller marshaller, Object id) {
             super(data, new LazyBSONCallback());
+            this.marshaller = marshaller;
             this.id = id;
-            this.keys = new HashSet<String>();
         }
 
         @Override
         public Object get(String key) {
             if ("_id".equals(key) && id != null) {
-                return id;
+                if (Bson.isPrimitive(id)) {
+                    return id;
+                } else {
+                    return asBsonDocument(marshaller, id).toDBObject();
+                }
             }
             return super.get(key);
         }
+    }
 
-        @Override
-        public Set<String> keySet() {
-            Set<String> combined = new HashSet<String>();
-            combined.addAll(keys);
-            combined.addAll(super.keySet());
-            return combined;
+    private static BsonDocument asBsonDocument(Marshaller marshaller, Object obj) {
+        try {
+            return marshaller.marshall(obj);
+        } catch (Exception e) {
+            String message = String.format("Unable to save object %s due to a marshalling error", obj);
+            throw new IllegalArgumentException(message, e);
         }
     }
 }

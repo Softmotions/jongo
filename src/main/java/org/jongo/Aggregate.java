@@ -16,32 +16,27 @@
 
 package org.jongo;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.CommandResult;
-import com.mongodb.DB;
+import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.jongo.marshall.Unmarshaller;
 import org.jongo.query.QueryFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-import static org.jongo.ResultHandlerFactory.newMapper;
+import static org.jongo.ResultHandlerFactory.newResultHandler;
 
 public class Aggregate {
 
-    private final DB db;
-    private final String collectionName;
     private final Unmarshaller unmarshaller;
     private final QueryFactory queryFactory;
     private final List<DBObject> pipeline;
+    private final DBCollection collection;
 
-    Aggregate(DB db, String collectionName, Unmarshaller unmarshaller, QueryFactory queryFactory) {
-        this.db = db;
-        this.collectionName = collectionName;
+    Aggregate(DBCollection collection, Unmarshaller unmarshaller, QueryFactory queryFactory) {
         this.unmarshaller = unmarshaller;
         this.queryFactory = queryFactory;
         this.pipeline = new ArrayList<DBObject>();
+        this.collection = collection;
     }
 
     public Aggregate and(String pipelineOperator, Object... parameters) {
@@ -50,28 +45,43 @@ public class Aggregate {
         return this;
     }
 
-    public <T> List<T> as(final Class<T> clazz) {
-        return map(newMapper(clazz, unmarshaller));
+    public <T> ResultsIterator<T> as(final Class<T> clazz) {
+        return map(newResultHandler(clazz, unmarshaller));
     }
 
-    public <T> List<T> map(ResultHandler<T> resultHandler) {
-        List<DBObject> results = executeAggregateCommand();
-        List<T> mappedResult = new ArrayList<T>(results.size());
-        for (DBObject dbObject : results) {
-            mappedResult.add(resultHandler.map(dbObject));
+    public <T> ResultsIterator<T> map(ResultHandler<T> resultHandler) {
+        Iterable<DBObject> results = collection.aggregate(pipeline).results();
+        return new ResultsIterator<T>(results, resultHandler);
+    }
+
+    public static class ResultsIterator<E> implements Iterator<E>, Iterable<E> {
+
+        private Iterator<DBObject> results;
+        private ResultHandler<E> resultHandler;
+
+        public ResultsIterator(Iterable<DBObject> results, ResultHandler<E> resultHandler) {
+            this.resultHandler = resultHandler;
+            this.results = results.iterator();
         }
-        return mappedResult;
-    }
 
-    private List<DBObject> executeAggregateCommand() {
-        CommandResult commandResult = db.command(createCommand());
-        commandResult.throwOnError();
-        return (List<DBObject>) (commandResult.get("result"));
-    }
+        public Iterator<E> iterator() {
+            return this;
+        }
 
-    DBObject createCommand() {
-        BasicDBObject cmd = new BasicDBObject("aggregate", collectionName);
-        cmd.put("pipeline", pipeline);
-        return cmd;
+        public boolean hasNext() {
+            return results.hasNext();
+        }
+
+        public E next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            DBObject dbObject = results.next();
+            return resultHandler.map(dbObject);
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException("remove() method is not supported");
+        }
     }
 }

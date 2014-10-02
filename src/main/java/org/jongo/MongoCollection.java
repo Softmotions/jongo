@@ -225,7 +225,7 @@ public class MongoCollection {
     }
 
     public Aggregate aggregate(String pipelineOperator, Object... parameters) {
-        return new Aggregate(collection.getDB(), collection.getName(), mapper.getUnmarshaller(), mapper.getQueryFactory()).and(pipelineOperator, parameters);
+        return new Aggregate(collection, mapper.getUnmarshaller(), mapper.getQueryFactory()).and(pipelineOperator, parameters);
     }
 
     public void drop() {

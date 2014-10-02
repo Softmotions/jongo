@@ -35,6 +35,6 @@ public class ObjectIdDeserializer extends JsonDeserializer<String> {
         if (oid != null)
             return oid.asText();
         else
-            return treeNode.toString();
+            return ((JsonNode) treeNode).asText();
     }
 }

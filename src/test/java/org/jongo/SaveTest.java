@@ -20,17 +20,17 @@ import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
 import junit.framework.Assert;
 import org.bson.types.ObjectId;
-import org.jongo.model.Coordinate;
-import org.jongo.model.ExposableFriend;
-import org.jongo.model.ExternalFriend;
-import org.jongo.model.Friend;
+import org.jongo.marshall.jackson.oid.Id;
+import org.jongo.model.*;
 import org.jongo.util.ErrorObject;
 import org.jongo.util.JongoTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.fest.assertions.Assertions.assertThat;
+import java.util.Date;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class SaveTest extends JongoTestCase {
 
@@ -125,6 +125,36 @@ public class SaveTest extends JongoTestCase {
     }
 
     @Test
+    public void canUpdateWithObjectIdAsString() throws Exception {
+        String id = ObjectId.get().toString();
+        ExposableFriend robert = new ExposableFriend(id, "Robert");
+
+        collection.save(robert);
+        String johnId = robert.getId();
+
+        robert.setName("Hue"); // <-- "famous" french Robert
+        collection.save(robert);
+
+        ExposableFriend robertHue = collection.findOne("{_id:{$oid:#}}", johnId).as(ExposableFriend.class);
+        assertThat(robertHue.getId()).isEqualTo(johnId);
+        assertThat(robertHue.getName()).isEqualTo("Hue");
+    }
+
+    @Test
+    public void canUpdateAPojoWithACustomId() throws Exception {
+
+        ExternalFriend externalFriend = new ExternalFriend(122, "John");
+        MongoCollection safeCollection = collection.withWriteConcern(WriteConcern.SAFE);
+
+        safeCollection.save(externalFriend);
+        externalFriend.setName("Robert");
+        safeCollection.save(externalFriend);
+
+        ExternalFriend result = collection.findOne("{name:'Robert'}").as(ExternalFriend.class);
+        assertThat(result.getId()).isEqualTo(122);
+    }
+
+    @Test
     public void canSaveWithAnEmptyObjectIdAsString() throws Exception {
 
         ExposableFriend john = new ExposableFriend("Robert");
@@ -134,6 +164,23 @@ public class SaveTest extends JongoTestCase {
         ExposableFriend result = collection.findOne().as(ExposableFriend.class);
         assertThat(result).isNotNull();
         assertThat(result.getId()).isNotNull();
+    }
+
+    @Test
+    public void canUpdateAValidObjectIdString() {
+
+        Order order = new Order();
+        order.setBuyer("foo");
+
+        collection.save(order);
+        String id = order.getId();
+        assertThat(order.getId()).isNotNull();
+
+        order.setBuyer("bar");
+        collection.save(order);
+
+        assertThat(order.getId()).isEqualTo(id);
+        assertThat(order.getBuyer()).isEqualTo("bar");
     }
 
     @Test
@@ -177,6 +224,40 @@ public class SaveTest extends JongoTestCase {
         WriteResult writeResult = collection.save(friend);
 
         assertThat(writeResult.getLastConcern()).isEqualTo(collection.getDBCollection().getWriteConcern());
+    }
+
+    @Test
+    public void canSaveWithCompositeKey() {
+
+        MapReduceData aggregate = new MapReduceData("group", new Date(), 1);
+
+        collection.save(aggregate);
+    }
+
+    private static class Order {
+
+        @Id
+        private String id;
+        private String buyer;
+
+        public Order() {
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getBuyer() {
+            return buyer;
+        }
+
+        public void setBuyer(String buyer) {
+            this.buyer = buyer;
+        }
     }
 
 }

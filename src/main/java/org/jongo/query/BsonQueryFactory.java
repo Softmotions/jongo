@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2011 Benoit GUEROUT <bguerout at gmail dot com>, Yves AMSELLEM <amsellem dot yves at gmail dot com>
- * and other contributors
+ * Copyright (C) 2011 Benoit GUEROUT <bguerout at gmail dot com> and Yves AMSELLEM <amsellem dot yves at gmail dot com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +23,22 @@ import com.mongodb.util.JSONCallback;
 import org.bson.BSON;
 import org.bson.BSONObject;
 import org.jongo.bson.Bson;
+import org.jongo.bson.BsonDocument;
 import org.jongo.marshall.Marshaller;
 import org.jongo.marshall.MarshallingException;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class BsonQueryFactory implements QueryFactory {
 
     private static final String DEFAULT_TOKEN = "#";
+    private static final String MARSHALL_OPERATOR = "$marshall";
+
     private final String token;
     private final Marshaller marshaller;
-
-    private static final String MARSHALL_OPERATOR = "$marshall";
-    private static final String PRECEDING_VALUE_PARAM = ": ,[\t\r\n";
 
     private static class BsonQuery implements Query {
         private final DBObject dbo;
@@ -92,15 +93,7 @@ public class BsonQueryFactory implements QueryFactory {
 
             // Check if the character preceding the token is one that separates values.
             // Otherwise, it's a property name substitution
-            boolean isValueParam = true;
-            if (pos > 0) {
-                char c = query.charAt(pos - 1);
-                if (PRECEDING_VALUE_PARAM.indexOf(c) == -1) {
-                    isValueParam = false;
-                }
-            }
-
-            if (isValueParam) {
+            if (isValueToken(query, pos)) {
                 // Will be resolved by the JSON parser below
                 sb.append("{\"").append(MARSHALL_OPERATOR).append("\":").append(paramIncrement).append("}");
                 paramIncrement = 0;
@@ -145,7 +138,7 @@ public class BsonQueryFactory implements QueryFactory {
                                 throw new IllegalArgumentException("Not enough parameters passed to query: " + query);
                             }
 
-                            o = marshallParameter(params[paramPos++], false);
+                            o = marshallParameter(params[paramPos++]);
 
                             // Replace value set by super.objectDone()
                             if (!isStackEmpty()) {
@@ -173,14 +166,36 @@ public class BsonQueryFactory implements QueryFactory {
 
     }
 
-    private Object marshallParameter(Object parameter, boolean serializeBsonPrimitives) {
+    private boolean isValueToken(String query, int tokenIndex) {
+        for (int pos = tokenIndex; pos >= 0; pos--) {
+            char c = query.charAt(pos);
+            if (c == ':') {
+                return true;
+            } else if (c == '{' || c == '.') {
+                return false;
+            } else if (c == ',') {
+                return !isPropertyName(query, pos-1);
+            }
+        }
+        return true;
+    }
+
+    private boolean isPropertyName(String query, int tokenIndex) {
+        for (int pos = tokenIndex; pos >= 0; pos--) {
+            char c = query.charAt(pos);
+            if (c == '[') {
+                return false;
+            } else if (c == '{') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Object marshallParameter(Object parameter) {
         try {
             if (parameter == null || Bson.isPrimitive(parameter)) {
-                return serializeBsonPrimitives ? JSON.serialize(parameter) : parameter;
-            }
-            if (parameter instanceof Enum) {
-                String name = ((Enum<?>) parameter).name();
-                return serializeBsonPrimitives ? JSON.serialize(name) : name;
+                return parameter;
             }
             if (parameter instanceof Collection) {
                 return marshallCollection((Collection<?>) parameter);
@@ -198,7 +213,7 @@ public class BsonQueryFactory implements QueryFactory {
     private DBObject marshallArray(Object[] parameters) {
         BasicDBList list = new BasicDBList();
         for (int i = 0; i < parameters.length; i++) {
-            list.add(marshallParameter(parameters[i], false));
+            list.add(marshallParameter(parameters[i]));
         }
         return list;
     }
@@ -206,12 +221,38 @@ public class BsonQueryFactory implements QueryFactory {
     private DBObject marshallCollection(Collection<?> parameters) {
         BasicDBList list = new BasicDBList();
         for (Object param : parameters) {
-            list.add(marshallParameter(param, false));
+            list.add(marshallParameter(param));
         }
         return list;
     }
 
-    private DBObject marshallDocument(Object parameter) {
-        return marshaller.marshall(parameter).toDBObject();
+    private Object marshallDocument(Object parameter) {
+
+        if (parameter instanceof Enum) {
+            return marshallPrimitiveWithWrapper(parameter);
+        } else {
+            BsonDocument document = marshaller.marshall(parameter);
+            DBObject dbo = document.toDBObject();
+
+            if (dbo.keySet().isEmpty()) {
+                return marshallPrimitiveWithWrapper(parameter);
+            } else {
+                return dbo;
+            }
+        }
+    }
+
+    /**
+     * The object may have been serialized to a primitive type with a
+     * custom serializer, so try again after wrapping as an object property.
+     * We do this trick only as a fallback since it causes Jackson to consider the parameter
+     * as "Object" and thus ignore any annotations that may exist on its actual class.
+     */
+    private Object marshallPrimitiveWithWrapper(Object parameter) {
+        final BsonDocument document;
+
+        Map<String, Object> primitiveWrapper = Collections.singletonMap("wrapped", parameter);
+        document = marshaller.marshall(primitiveWrapper);
+        return document.toDBObject().get("wrapped");
     }
 }
