@@ -17,30 +17,55 @@
 package org.jongo.util.compatibility;
 
 import org.jongo.Mapper;
+import org.jongo.util.JongoTestCase;
+import org.reflections.Reflections;
 
-import java.util.List;
+import java.util.*;
 
 public class TestContext {
 
     private final String contextName;
     private final Mapper mapper;
-    private final List<Class<?>> ignoredTests;
+    private final List<Class<? extends JongoTestCase>> ignoredTestCases;
+    private final Map<Class<? extends JongoTestCase>, String> ignoredTests;
 
-    public TestContext(String contextName, Mapper mapper, List<Class<?>> ignoredTests) {
+    public TestContext(String contextName, Mapper mapper) {
         this.contextName = contextName;
         this.mapper = mapper;
-        this.ignoredTests = ignoredTests;
-    }
-
-    public Mapper getMapper() {
-        return mapper;
+        this.ignoredTestCases = new ArrayList<Class<? extends JongoTestCase>>();
+        this.ignoredTests = new HashMap<Class<? extends JongoTestCase>, String>();
     }
 
     public String getContextName() {
         return contextName;
     }
 
-    public List<Class<?>> getIgnoredTests() {
-        return ignoredTests;
+    public boolean mustIgnoreTestCase(Class<?> clazz) {
+        return ignoredTestCases.contains(clazz);
     }
+
+    public void ignoreTestCase(Class<? extends JongoTestCase> clazz) {
+        ignoredTestCases.add(clazz);
+    }
+
+    public boolean mustIgnoreTest(Class<?> clazz, String methodName) {
+        return ignoredTests.containsKey(clazz) && ignoredTests.get(clazz).equals(methodName);
+    }
+
+    public void ignoreTest(Class<? extends JongoTestCase> clazz, String methodName) {
+        ignoredTests.put(clazz, methodName);
+    }
+
+    public List<Class<?>> findTestCases() {
+        Set<Class<? extends JongoTestCase>> jongoTestCases = new Reflections("org.jongo").getSubTypesOf(JongoTestCase.class);
+        return new ArrayList<Class<?>>(jongoTestCases);
+    }
+
+    public void prepareTestCase(Object testCase) throws Exception {
+        if (testCase instanceof JongoTestCase) {
+            JongoTestCase test = (JongoTestCase) testCase;
+            test.prepareMarshallingStrategy(mapper);
+        }
+    }
+
 }

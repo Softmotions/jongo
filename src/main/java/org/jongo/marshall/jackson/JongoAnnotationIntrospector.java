@@ -14,38 +14,21 @@
  * limitations under the License.
  */
 
-package org.jongo.bson;
+package org.jongo.marshall.jackson;
 
-import com.mongodb.DBObject;
+import com.fasterxml.jackson.databind.introspect.NopAnnotationIntrospector;
+import org.jongo.marshall.jackson.oid.MongoId;
+import org.jongo.marshall.jackson.oid.MongoObjectId;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.lang.annotation.Annotation;
 
-class LazyBsonDocument implements BsonDocument {
-
-    private final byte[] bytes;
-
-    LazyBsonDocument(byte[] bytes) {
-        this.bytes = bytes;
-    }
-
-    public int getSize() {
-        final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return buffer.getInt(0);
-    }
-
-    public byte[] toByteArray() {
-        return bytes;
-    }
-
-    public DBObject toDBObject() {
-        return new BsonDBObject(bytes, 0);
-    }
+public class JongoAnnotationIntrospector extends NopAnnotationIntrospector {
 
     @Override
-    public String toString() {
-        return toDBObject().toString();
+    public boolean isAnnotationBundle(Annotation ann) {
+        boolean isJongoId = ann.annotationType().equals(MongoId.class) || ann.annotationType().equals(MongoObjectId.class);
+        return isJongoId ? isJongoId : super.isAnnotationBundle(ann);
     }
+
 
 }

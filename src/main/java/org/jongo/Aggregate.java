@@ -16,12 +16,17 @@
 
 package org.jongo;
 
+import com.mongodb.AggregationOptions;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.jongo.marshall.Unmarshaller;
 import org.jongo.query.QueryFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.jongo.ResultHandlerFactory.newResultHandler;
 
@@ -30,12 +35,14 @@ public class Aggregate {
     private final Unmarshaller unmarshaller;
     private final QueryFactory queryFactory;
     private final List<DBObject> pipeline;
+    private final AtomicReference<AggregationOptions> options;
     private final DBCollection collection;
 
     Aggregate(DBCollection collection, Unmarshaller unmarshaller, QueryFactory queryFactory) {
         this.unmarshaller = unmarshaller;
         this.queryFactory = queryFactory;
         this.pipeline = new ArrayList<DBObject>();
+        this.options = new AtomicReference<AggregationOptions>();
         this.collection = collection;
     }
 
@@ -49,8 +56,19 @@ public class Aggregate {
         return map(newResultHandler(clazz, unmarshaller));
     }
 
+    public Aggregate options(AggregationOptions options) {
+        this.options.set(options);
+        return this;
+    }
+
     public <T> ResultsIterator<T> map(ResultHandler<T> resultHandler) {
-        Iterable<DBObject> results = collection.aggregate(pipeline).results();
+        Iterator<DBObject> results;
+        AggregationOptions options = this.options.get();
+        if (options != null) {
+            results = collection.aggregate(pipeline, options);
+        } else {
+            results = collection.aggregate(pipeline).results().iterator();
+        }
         return new ResultsIterator<T>(results, resultHandler);
     }
 
@@ -59,9 +77,9 @@ public class Aggregate {
         private Iterator<DBObject> results;
         private ResultHandler<E> resultHandler;
 
-        public ResultsIterator(Iterable<DBObject> results, ResultHandler<E> resultHandler) {
+        private ResultsIterator(Iterator<DBObject> results, ResultHandler<E> resultHandler) {
             this.resultHandler = resultHandler;
-            this.results = results.iterator();
+            this.results = results;
         }
 
         public Iterator<E> iterator() {

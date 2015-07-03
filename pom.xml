@@ -24,23 +24,8 @@
         <version>1.0.0</version>
     </parent>
 
-    <repositories>
-        <repository>
-            <id>central</id>
-            <name>Maven Repository Switchboard</name>
-            <layout>default</layout>
-            <url>http://repo1.maven.org/maven2</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>jaxion_repository</id>
-            <url>http://jaxion.org/mvn/</url>
-        </repository>
-    </repositories>
-
-    <artifactId>softmotions-jongo</artifactId>
+    <groupId>org.jongo</groupId>
+    <artifactId>jongo</artifactId>
     <version>1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Jongo</name>
@@ -70,7 +55,7 @@
     </developers>
 
     <properties>
-        <mongo.version>[2.12.3,2.99)</mongo.version>
+        <mongo.version>[2.13.0,3.0.0]</mongo.version>
         <jackson.version>2.4.1</jackson.version>
         <bson4jackson.version>2.4.0</bson4jackson.version>
     </properties>
@@ -145,7 +130,7 @@
         <dependency>
             <groupId>de.flapdoodle.embed</groupId>
             <artifactId>de.flapdoodle.embed.mongo</artifactId>
-            <version>1.40</version>
+            <version>1.47.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>

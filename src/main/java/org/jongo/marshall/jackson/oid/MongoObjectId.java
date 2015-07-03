@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package org.jongo.util;
+package org.jongo.marshall.jackson.oid;
 
-import com.mongodb.DBObject;
-import com.mongodb.util.JSONSerializers;
-import org.jongo.ResultHandler;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public class JSONResultHandler implements ResultHandler<String> {
-    public String map(DBObject result) {
-        return JSONSerializers.getStrict().serialize(result);
-    }
+import java.lang.annotation.Retention;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    public static String jsonify(String json) {
-        return json.replace("'", "\"");
-    }
+@Retention(RUNTIME)
+@JsonInclude(NON_NULL)
+@JsonSerialize(using = ObjectIdSerializer.class)
+@JsonDeserialize(using = ObjectIdDeserializer.class)
+public @interface MongoObjectId {
 }

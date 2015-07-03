@@ -14,38 +14,15 @@
  * limitations under the License.
  */
 
-package org.jongo.bson;
+package org.jongo.marshall.jackson.oid;
 
-import com.mongodb.DBObject;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.lang.annotation.Retention;
 
-class LazyBsonDocument implements BsonDocument {
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    private final byte[] bytes;
-
-    LazyBsonDocument(byte[] bytes) {
-        this.bytes = bytes;
-    }
-
-    public int getSize() {
-        final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return buffer.getInt(0);
-    }
-
-    public byte[] toByteArray() {
-        return bytes;
-    }
-
-    public DBObject toDBObject() {
-        return new BsonDBObject(bytes, 0);
-    }
-
-    @Override
-    public String toString() {
-        return toDBObject().toString();
-    }
-
+@Retention(RUNTIME)
+@JsonProperty("_id")
+public @interface MongoId {
 }

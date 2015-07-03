@@ -16,7 +16,6 @@
 
 package org.jongo.marshall;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.Lists;
 import com.mongodb.DBObject;
 import org.bson.types.ObjectId;
@@ -36,7 +35,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import static junit.framework.Assert.fail;
@@ -100,16 +98,6 @@ public class ParameterQueryBindingTest extends JongoTestCase {
 
         assertThat(results.next().getGender()).isEqualTo(Gender.FEMALE);
         assertThat(results.hasNext()).isFalse();
-    }
-
-    @Test
-    public void canBindEnumWithAnnotations() throws Exception {
-
-        collection.insert("{'type':0}");
-
-        Map result = collection.findOne("{'type':#}", Type.EMPTY).as(Map.class);
-
-        assertThat(result).isNotNull();
     }
 
     @Test
@@ -180,6 +168,28 @@ public class ParameterQueryBindingTest extends JongoTestCase {
         long nb = collection.count("{name:#}", null);
 
         assertThat(nb).isEqualTo(1);
+    }
+
+    @Test
+    public void canBindAHashIntoParameter() throws Exception {
+
+        collection.insert("{name:#}", "test val#1");
+
+        Friend friend = collection.findOne("{name:#}", "test val#1").as(Friend.class);
+
+        assertThat(friend).isNotNull();
+        assertThat(friend.getName()).isEqualTo("test val#1");
+    }
+
+    @Test
+    public void canBindPrimitiveArrayParameter() throws Exception {
+
+        collection.insert("{value:42, other:true}");
+
+        assertThat(collection.count("{value:{$in:#}}", new int[]{42, 34})).isEqualTo(1);
+        assertThat(collection.count("{value:{$in:#}}", new long[]{42})).isEqualTo(1);
+        assertThat(collection.count("{value:{$in:#}}", new float[]{42})).isEqualTo(1);
+        assertThat(collection.count("{other:{$in:#}}", new boolean[]{true})).isEqualTo(1);
     }
 
 
@@ -323,19 +333,4 @@ public class ParameterQueryBindingTest extends JongoTestCase {
             friends.add(buddy);
         }
     }
-
-    private static enum Type {
-        EMPTY(0);
-        private int value;
-
-        private Type(int value) {
-            this.value = value;
-        }
-
-        @JsonValue
-        public int getValue() {
-            return value;
-        }
-    }
-
 }

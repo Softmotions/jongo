@@ -25,6 +25,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
+
 import static junit.framework.Assert.fail;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,12 +63,11 @@ public class UpdateTest extends JongoTestCase {
         collection.save(new Friend("John"));
 
         /* when */
-        WriteResult writeResult = collection.update("{name:'John'}").multi().with("{$unset:{name:1}}");
+        collection.update("{name:'John'}").multi().with("{$unset:{name:1}}");
 
         /* then */
         Iterable<Friend> friends = collection.find("{name:{$exists:true}}").as(Friend.class);
         assertThat(friends).hasSize(0);
-        assertThat(writeResult.getLastConcern()).isEqualTo(collection.getDBCollection().getWriteConcern());
     }
 
     @Test
@@ -76,13 +77,11 @@ public class UpdateTest extends JongoTestCase {
         collection.save(new Friend("John"));
 
         /* when */
-        WriteResult writeResult = collection.withWriteConcern(WriteConcern.SAFE).update("{name:'John'}").multi().with("{$unset:{name:1}}");
+        collection.withWriteConcern(WriteConcern.SAFE).update("{name:'John'}").multi().with("{$unset:{name:1}}");
 
         /* then */
         Iterable<Friend> friends = collection.find("{name:{$exists:true}}").as(Friend.class);
         assertThat(friends).hasSize(0);
-        assertThat(writeResult.getLastConcern()).isEqualTo(WriteConcern.SAFE);
-
     }
 
     @Test
@@ -119,19 +118,6 @@ public class UpdateTest extends JongoTestCase {
     }
 
     @Test
-    public void canUpsertWithWriteConcern() throws Exception {
-
-        /* when */
-        WriteResult writeResult = collection.withWriteConcern(WriteConcern.SAFE).update("{}").upsert().with("{$set:{name:'John'}}");
-
-        /* then */
-        Friend john = collection.findOne("{name:'John'}").as(Friend.class);
-        assertThat(john.getName()).isEqualTo("John");
-        assertThat(writeResult).isNotNull();
-        assertThat(writeResult.getLastConcern()).isEqualTo(WriteConcern.SAFE);
-    }
-
-    @Test
     public void canPartiallyUdpateWithAPreexistingDocument() throws Exception {
         Friend friend = new Friend("John", "123 Wall Street");
         collection.save(friend);
@@ -157,5 +143,18 @@ public class UpdateTest extends JongoTestCase {
         assertThat(johnny).isNotNull();
         assertThat(johnny.getName()).isEqualTo("Johnny");
         assertThat(johnny.getAddress()).isEqualTo("123 Wall Street");
+    }
+
+    @Test
+    public void canReplaceAllFields() throws Exception {
+
+        Friend friend = new Friend("Peter", "31 rue des Lilas");
+        collection.save(friend);
+
+        collection.update(friend.getId()).with("#", new Friend("John"));
+
+        Map map = collection.findOne().as(Map.class);
+        assertThat(map.get("name")).isEqualTo("John");
+        assertThat(map).doesNotContainKey("address");
     }
 }

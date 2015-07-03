@@ -16,7 +16,8 @@
 
 package org.jongo;
 
-import com.mongodb.CommandFailureException;
+import com.mongodb.AggregationOptions;
+import com.mongodb.MongoCommandException;
 import org.jongo.util.JongoTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -25,9 +26,12 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static junit.framework.Assert.fail;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 public class AggregateTest extends JongoTestCase {
 
@@ -59,6 +63,34 @@ public class AggregateTest extends JongoTestCase {
         for (Article article : articles) {
             assertThat(article.title).isIn("Zombie Panic", "Apocalypse Zombie", "World War Z");
         }
+    }
+
+    @Test
+    public void canAggregateWithDefaultOptions() throws Exception {
+        AggregationOptions options = AggregationOptions.builder().build();
+        Iterable<Article> articles = collection.aggregate("{$match:{}}").options(options).as(Article.class);
+
+        assertThat(articles.iterator().hasNext()).isTrue();
+        for (Article article : articles) {
+            assertThat(article.title).isIn("Zombie Panic", "Apocalypse Zombie", "World War Z");
+        }
+    }
+
+    @Test
+    public void canAggregateWithOptions() throws Exception {
+
+        AggregationOptions options = spy(AggregationOptions.builder().outputMode(AggregationOptions.OutputMode.CURSOR).allowDiskUse(true).build());
+
+        Iterable<Article> articles = collection.aggregate("{$match:{}}").options(options).as(Article.class);
+
+        assertThat(articles.iterator().hasNext()).isTrue();
+        for (Article article : articles) {
+            assertThat(article.title).isIn("Zombie Panic", "Apocalypse Zombie", "World War Z");
+        }
+        verify(options, atLeastOnce()).getAllowDiskUse();
+        verify(options, atLeastOnce()).getMaxTime(any(TimeUnit.class));
+        verify(options, atLeastOnce()).getBatchSize();
+        verify(options, atLeastOnce()).getOutputMode();
     }
 
     @Test
@@ -110,7 +142,7 @@ public class AggregateTest extends JongoTestCase {
             collection.aggregate("{$invalid:{}}").as(Article.class);
             fail();
         } catch (Exception e) {
-            assertThat(CommandFailureException.class).isAssignableFrom(e.getClass());
+            assertThat(MongoCommandException.class).isAssignableFrom(e.getClass());
         }
     }
 
@@ -126,6 +158,7 @@ public class AggregateTest extends JongoTestCase {
         }
 
         private Article() {
+            //used by jackson
         }
     }
 }
