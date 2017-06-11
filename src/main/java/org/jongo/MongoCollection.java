@@ -16,10 +16,17 @@
 
 package org.jongo;
 
-import com.mongodb.*;
+import org.bson.BsonDocumentWrapper;
 import org.bson.types.ObjectId;
 import org.jongo.constraints.Constraints;
 import org.jongo.query.Query;
+
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.ReadPreference;
+import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
 
 
 public class MongoCollection {
@@ -280,6 +287,10 @@ public class MongoCollection {
 
         public DBObject toDBObject() {
             return dbo;
+        }
+
+        public org.bson.conversions.Bson toBson() {
+            return BsonDocumentWrapper.asBsonDocument(dbo, MongoClient.getDefaultCodecRegistry());
         }
     }
 }
