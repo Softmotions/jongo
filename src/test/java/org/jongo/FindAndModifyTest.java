@@ -17,10 +17,12 @@
 package org.jongo;
 
 import com.mongodb.DBObject;
+import org.bson.types.ObjectId;
 import org.jongo.marshall.MarshallingException;
+import org.jongo.model.ExposableFriend;
 import org.jongo.model.Friend;
 import org.jongo.util.ErrorObject;
-import org.jongo.util.JongoTestCase;
+import org.jongo.util.JongoTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +30,7 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
-public class FindAndModifyTest extends JongoTestCase {
+public class FindAndModifyTest extends JongoTestBase {
 
     private MongoCollection collection;
 
@@ -166,6 +168,30 @@ public class FindAndModifyTest extends JongoTestCase {
                 return true;
             }
         });
+    }
+
+    @Test
+    public void canUpsertByObjectId() throws Exception {
+        Friend expected = new Friend(new ObjectId(), "John");
+        Friend actual = collection.findAndModify("{_id: #}", expected.getId())
+                .upsert()
+                .returnNew()
+                .with("{$setOnInsert: {name: #}}", "John")
+                .as(Friend.class);
+
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    public void canUpsertByStringId() throws Exception {
+        ExposableFriend expected = new ExposableFriend(new ObjectId().toString(), "John");
+        ExposableFriend actual = collection.findAndModify("{_id: #}", expected.getId())
+                .upsert()
+                .returnNew()
+                .with("{$setOnInsert: {name: #}}", "John")
+                .as(ExposableFriend.class);
+
+        assertThat(actual).isEqualTo(expected);
     }
 
 }

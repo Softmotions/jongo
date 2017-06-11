@@ -21,41 +21,45 @@ import com.mongodb.DB;
 import org.jongo.Jongo;
 import org.jongo.Mapper;
 import org.jongo.MongoCollection;
-import org.jongo.marshall.jackson.JacksonMapper;
 import org.junit.BeforeClass;
 
 import java.net.UnknownHostException;
 
+import static org.jongo.marshall.jackson.JacksonMapper.Builder.jacksonMapper;
 import static org.junit.Assume.assumeTrue;
 
-public abstract class JongoTestCase {
+public abstract class JongoTestBase {
 
-    private static MongoResource mongoResource;
+    private static MongoResource MONGO_RESOURCE;
 
     private Jongo jongo;
     private Mapper mapper;
 
-    public JongoTestCase() {
-        this.mapper = new JacksonMapper.Builder().build();
-        this.jongo = new Jongo(mongoResource.getDb("test_jongo"), mapper);
+    public JongoTestBase() {
+        this(jacksonMapper().build());
+    }
+
+    protected JongoTestBase(Mapper mapper) {
+        this.mapper = mapper;
+        this.jongo = new Jongo(MONGO_RESOURCE.getDb("test_jongo"), mapper);
     }
 
     @BeforeClass
     public static void startMongo() throws Exception {
-        mongoResource = new MongoResource();
+        MONGO_RESOURCE = new MongoResource();
     }
 
-    protected MongoCollection createEmptyCollection(String collectionName) throws UnknownHostException {
+    protected MongoCollection createEmptyCollection(String collectionName) {
         MongoCollection col = jongo.getCollection(collectionName);
         col.drop();
         return col;
     }
 
-    protected void dropCollection(String collectionName) throws UnknownHostException {
+    protected void dropCollection(String collectionName) {
         getDatabase().getCollection(collectionName).drop();
     }
 
-    protected DB getDatabase() throws UnknownHostException {
+    protected DB getDatabase() {
         return jongo.getDatabase();
     }
 
@@ -77,7 +81,7 @@ public abstract class JongoTestCase {
 
     public void prepareMarshallingStrategy(Mapper mapper) {
         this.mapper = mapper;
-        this.jongo = new Jongo(mongoResource.getDb("test_jongo"), mapper);
+        this.jongo = new Jongo(MONGO_RESOURCE.getDb("test_jongo"), mapper);
     }
 
 }
